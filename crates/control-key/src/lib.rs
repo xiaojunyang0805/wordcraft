@@ -67,6 +67,20 @@ mod tests {
     use super::*;
     use std::path::Path;
 
+    /// Only names that are refused, so the process-wide folder name stays WordCraft's for the
+    /// other tests.
+    #[test]
+    fn folder_names_that_are_not_plain_are_refused() {
+        for name in ["", ".", "..", "a/b", "a\\b", "C:", "../WordCraft"] {
+            assert!(!set_folder_name(name), "{name:?}");
+        }
+        if std::env::var_os("WORDCRAFT_PROFILE_DIR").is_none()
+            && let Some(dir) = settings_dir()
+        {
+            assert!(dir.ends_with("WordCraft") || dir.ends_with("wordcraft"), "{dir:?}");
+        }
+    }
+
     #[test]
     fn instance_id_only_safe_values() {
         assert_eq!(parse_instance_id("[Instance]\ninstance-id=abc_123-X\n").as_deref(), Some("abc_123-X"));
