@@ -280,11 +280,26 @@ impl Session {
     }
 }
 
-/// A new blank document on `region`'s paper (see [`Session::blank_document`]).
+/// Adjusts every new blank document for its region, set by an app built on WordCraft
+/// ([`set_blank_document_hook`]).
+static BLANK_HOOK: std::sync::OnceLock<fn(&wordcraft_geom::Region, &mut Document)> = std::sync::OnceLock::new();
+
+/// Have `hook` adjust every new blank document after WordCraft has made it for `region` (an app's
+/// own Normal defaults: fonts, spacing, page setup for its users' region). Only the first call
+/// counts; later ones return `false`.
+pub fn set_blank_document_hook(hook: fn(&wordcraft_geom::Region, &mut Document)) -> bool {
+    BLANK_HOOK.set(hook).is_ok()
+}
+
+/// A new blank document on `region`'s paper (see [`Session::blank_document`]), as the embedding
+/// app's hook adjusts it, if there is one.
 pub fn blank_document(region: &wordcraft_geom::Region) -> Document {
     let mut d = Document::new();
     let (_, w, h) = region.paper();
     d.last_section.page_w = w;
     d.last_section.page_h = h;
+    if let Some(hook) = BLANK_HOOK.get() {
+        hook(region, &mut d);
+    }
     d
 }

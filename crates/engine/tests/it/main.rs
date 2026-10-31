@@ -1,3 +1,4 @@
+mod blank_document_hook;
 mod comment_ids;
 mod date_fields;
 mod macro_packages;
