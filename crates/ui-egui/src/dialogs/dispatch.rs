@@ -1083,10 +1083,16 @@ fn about_dialog(ui: &mut Ui, d: &mut Dialog) -> bool {
         1 => crate::credits::contributors_ui(ui),
         2 => crate::credits::models_ui(ui),
         _ => {
-            ui.label(egui::RichText::new(tl!("WordCraft")).font(semibold(22.0)));
+            let brand = crate::brand::get();
+            ui.label(egui::RichText::new(crate::i18n::t(brand.name)).font(semibold(22.0)));
             let build = option_env!("WORDCRAFT_BUILD_SHA").map(|s| s.get(..8).unwrap_or(s)).unwrap_or(tl!("development build"));
-            ui.label(crate::i18n::fmt(tl!("Version {version} ({build})"), &[("version", env!("CARGO_PKG_VERSION")), ("build", build)]));
-            ui.label(tl!("A free, open-source word processor written from scratch in Rust.\nPart of the Crafting Apps from the ArtCraft team."));
+            ui.label(crate::i18n::fmt(tl!("Version {version} ({build})"), &[("version", brand.version), ("build", build)]));
+            match brand.about {
+                Some(about) => ui.label(about),
+                None => ui.label(tl!(
+                    "A free, open-source word processor written from scratch in Rust.\nPart of the Crafting Apps from the ArtCraft team."
+                )),
+            };
             ui.add_space(6.0);
             ui.hyperlink_to(tl!("getartcraft.com/apps/wordcraft"), "https://getartcraft.com/apps/wordcraft");
             ui.hyperlink_to(tl!("Join us on Discord: discord.gg/artcraft"), "https://discord.gg/artcraft");
