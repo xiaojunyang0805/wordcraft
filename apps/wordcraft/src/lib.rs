@@ -47,8 +47,11 @@ pub struct AppConfig {
     pub app_id: &'static str,
     /// The window and taskbar icon, PNG; `None` for WordCraft's.
     pub icon_png: Option<&'static [u8]>,
-    /// Runs first, before the command line is read and the window opens.
+    /// Runs once logging is installed, before the command line is read and the window opens.
     pub on_start: Option<fn()>,
+    /// Check for WordCraft updates at start-up (Help › Check for Updates stays available). An app
+    /// with releases of its own turns this off.
+    pub check_updates: bool,
 }
 
 impl Default for AppConfig {
@@ -60,6 +63,7 @@ impl Default for AppConfig {
             app_id: "ai.storyteller.wordcraft",
             icon_png: None,
             on_start: None,
+            check_updates: true,
         }
     }
 }
@@ -409,9 +413,6 @@ fn open_non_unicode(app: &mut WordApp, path: &std::path::Path) {
 pub fn run(config: AppConfig) -> eframe::Result {
     wordcraft_control_key::set_folder_name(config.settings_folder);
     wordcraft_ui_egui::brand::set(config.brand);
-    if let Some(on_start) = config.on_start {
-        on_start();
-    }
     let name = config.brand.name;
     // Windows: the update helper is a copy of this program started with `--finish-update`.
     #[cfg(windows)]
@@ -421,6 +422,9 @@ pub fn run(config: AppConfig) -> eframe::Result {
     // First, so the panic hook and every start-up warning are recorded (`logging`).
     let logger = logging::install();
     logging::install_panic_hook();
+    if let Some(on_start) = config.on_start {
+        on_start();
+    }
     let mut control_port: Option<u16> = std::env::var("WORDCRAFT_CONTROL_PORT").ok().and_then(|p| p.parse().ok());
     let mut files = Vec::new();
     let mut sample = false;
@@ -531,7 +535,7 @@ pub fn run(config: AppConfig) -> eframe::Result {
             let mut session = Session::new(doc);
             session.system_region = region;
             let mut app = WordApp::new(session, services(file_dialog, &cc.egui_ctx));
-            app.set_startup_update_check(true);
+            app.set_startup_update_check(config.check_updates);
             load_prefs(&mut app);
             load_user_dictionary(&mut app);
             // A region chosen in File › Options replaces the system's for the first blank
