@@ -790,7 +790,8 @@ fn word_count_dialog(app: &mut WordApp, ui: &mut Ui, d: &mut Dialog) -> bool {
 fn report_dialog(ui: &mut Ui, text: &str) -> bool {
     egui::ScrollArea::vertical().max_height(360.0).show(ui, |ui| {
         ui.set_min_width(420.0);
-        ui.add(egui::Label::new(egui::RichText::new(text).monospace()).wrap());
+        // The interface font, not monospace: a report may be in any script (Chinese has no monospace face here).
+        ui.add(egui::Label::new(text).wrap());
     });
     let (ok, cancel) = buttons(ui, tl!("Close"));
     ok || cancel
