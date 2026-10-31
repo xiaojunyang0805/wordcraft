@@ -2,24 +2,38 @@
 //! (which reads it): `<settings>/control-key.<instance>`. See `docs/control-protocol.md`, Keys.
 
 use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
+
+/// The settings folder's name, set by an app built on WordCraft ([`set_folder_name`]).
+static FOLDER: OnceLock<&'static str> = OnceLock::new();
+
+/// Keep this app's settings in a folder of its own, `name` (`Wenshu`: `%APPDATA%\Wenshu`, and
+/// `~/.config/wenshu` lowercased on Linux and the BSDs), apart from WordCraft's. Only the first
+/// call counts; later ones return `false`. A name that isn't a plain folder name is refused.
+pub fn set_folder_name(name: &'static str) -> bool {
+    let plain = !name.is_empty() && name != "." && name != ".." && !name.contains(['/', '\\', ':']);
+    plain && FOLDER.set(name).is_ok()
+}
 
 /// The app's settings folder (preferences, logs, key files): macOS
 /// `~/Library/Application Support/WordCraft`, Windows `%APPDATA%\WordCraft`, otherwise
-/// `$XDG_CONFIG_HOME/wordcraft` or `~/.config/wordcraft`.
+/// `$XDG_CONFIG_HOME/wordcraft` or `~/.config/wordcraft`; another name when an app built on
+/// WordCraft set one ([`set_folder_name`]).
 /// `WORDCRAFT_PROFILE_DIR` overrides the entire folder for isolated runs.
 pub fn settings_dir() -> Option<PathBuf> {
     if let Some(path) = std::env::var_os("WORDCRAFT_PROFILE_DIR").filter(|p| !p.is_empty()) {
         return Some(PathBuf::from(path));
     }
+    let name = FOLDER.get().copied().unwrap_or("WordCraft");
     if cfg!(target_os = "macos") {
-        std::env::var_os("HOME").map(|h| PathBuf::from(h).join("Library/Application Support/WordCraft"))
+        std::env::var_os("HOME").map(|h| PathBuf::from(h).join("Library/Application Support").join(name))
     } else if cfg!(windows) {
-        std::env::var_os("APPDATA").map(|a| PathBuf::from(a).join("WordCraft"))
+        std::env::var_os("APPDATA").map(|a| PathBuf::from(a).join(name))
     } else {
         std::env::var_os("XDG_CONFIG_HOME")
             .map(PathBuf::from)
             .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".config")))
-            .map(|c| c.join("wordcraft"))
+            .map(|c| c.join(name.to_lowercase()))
     }
 }
 

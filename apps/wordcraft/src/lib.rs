@@ -40,6 +40,9 @@ pub struct AppConfig {
     pub brand: Brand,
     /// The executable's name, as `--version` and command-line errors give it.
     pub bin: &'static str,
+    /// The settings folder's name (preferences, logs, recovery, personal templates):
+    /// `WordCraft`, or the embedding app's own so the two don't share settings.
+    pub settings_folder: &'static str,
     /// The application id (Wayland app id, X11 class).
     pub app_id: &'static str,
     /// The window and taskbar icon, PNG; `None` for WordCraft's.
@@ -50,7 +53,14 @@ pub struct AppConfig {
 
 impl Default for AppConfig {
     fn default() -> AppConfig {
-        AppConfig { brand: Brand::default(), bin: "wordcraft", app_id: "ai.storyteller.wordcraft", icon_png: None, on_start: None }
+        AppConfig {
+            brand: Brand::default(),
+            bin: "wordcraft",
+            settings_folder: "WordCraft",
+            app_id: "ai.storyteller.wordcraft",
+            icon_png: None,
+            on_start: None,
+        }
     }
 }
 
@@ -397,10 +407,11 @@ fn open_non_unicode(app: &mut WordApp, path: &std::path::Path) {
 /// panic hook, restores preferences and window geometry, opens requested documents or the Start
 /// screen, starts the control server when asked, and runs the eframe event loop.
 pub fn run(config: AppConfig) -> eframe::Result {
+    wordcraft_control_key::set_folder_name(config.settings_folder);
+    wordcraft_ui_egui::brand::set(config.brand);
     if let Some(on_start) = config.on_start {
         on_start();
     }
-    wordcraft_ui_egui::brand::set(config.brand);
     let name = config.brand.name;
     // Windows: the update helper is a copy of this program started with `--finish-update`.
     #[cfg(windows)]
