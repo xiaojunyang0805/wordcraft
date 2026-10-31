@@ -25,6 +25,7 @@ mod region;
 mod traffic_lights;
 
 use wordcraft_engine::Session;
+pub use wordcraft_ui_egui::AppTool;
 pub use wordcraft_ui_egui::brand::Brand;
 use wordcraft_ui_egui::{
     Services, UiState, WordApp,
@@ -52,6 +53,8 @@ pub struct AppConfig {
     /// Check for WordCraft updates at start-up (Help › Check for Updates stays available). An app
     /// with releases of its own turns this off.
     pub check_updates: bool,
+    /// Tools the app adds to the ribbon (Review, in a group named after the brand).
+    pub app_tools: Option<fn() -> Vec<AppTool>>,
 }
 
 impl Default for AppConfig {
@@ -64,6 +67,7 @@ impl Default for AppConfig {
             icon_png: None,
             on_start: None,
             check_updates: true,
+            app_tools: None,
         }
     }
 }
@@ -534,7 +538,9 @@ pub fn run(config: AppConfig) -> eframe::Result {
             let (file_dialog, dialogs) = file_dialogs::hook(&cc.egui_ctx);
             let mut session = Session::new(doc);
             session.system_region = region;
-            let mut app = WordApp::new(session, services(file_dialog, &cc.egui_ctx));
+            let mut services = services(file_dialog, &cc.egui_ctx);
+            services.app_tools = config.app_tools.map(|tools| tools()).unwrap_or_default();
+            let mut app = WordApp::new(session, services);
             app.set_startup_update_check(config.check_updates);
             load_prefs(&mut app);
             load_user_dictionary(&mut app);

@@ -88,6 +88,7 @@ pub fn show(app: &mut WordApp, ctx: &egui::Context) {
         Dialog::Link { .. } => "Insert Hyperlink",
         Dialog::Bookmark { .. } => "Bookmark",
         Dialog::WordCount { .. } => "Word Count",
+        Dialog::Report { title, .. } => title,
         Dialog::Zoom { .. } => "Zoom",
         Dialog::Watermark { .. } => "Custom Watermark",
         Dialog::Phonetic { .. } => "Phonetic Guide",

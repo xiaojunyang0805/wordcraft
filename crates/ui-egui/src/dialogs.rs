@@ -212,6 +212,11 @@ pub enum Dialog {
     WordCount {
         stats: Value,
     },
+    /// An app tool's report ([`crate::services::AppTool`]): its label and the text it returned.
+    Report {
+        title: &'static str,
+        text: String,
+    },
     Zoom {
         percent: f32,
     },
@@ -493,6 +498,7 @@ impl Dialog {
             Dialog::Link { .. } => "link",
             Dialog::Bookmark { .. } => "bookmark",
             Dialog::WordCount { .. } => "wordCount",
+            Dialog::Report { .. } => "report",
             Dialog::Zoom { .. } => "zoom",
             Dialog::Watermark { .. } => "watermark",
             Dialog::Phonetic { .. } => "phonetic",

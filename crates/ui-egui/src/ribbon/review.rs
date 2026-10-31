@@ -20,6 +20,15 @@ pub(super) fn review(app: &mut WordApp, ui: &mut Ui) {
     group(ui, "Speech", None, app, |ui, app| {
         big(ui, app, "readAloud", "Read\nAloud", "review.readAloud", json!({}), false);
     });
+    // The embedding app's own tools, in a group named after it.
+    let tools: Vec<(&'static str, &'static str, &'static str)> = app.services.app_tools.iter().map(|t| (t.id, t.label, t.icon)).collect();
+    if !tools.is_empty() {
+        group(ui, crate::brand::name(), None, app, |ui, app| {
+            for (id, label, icon) in tools {
+                big(ui, app, icon, label, "ui.appTool", json!({"id": id}), false);
+            }
+        });
+    }
     group(ui, "Accessibility", None, app, |ui, app| {
         big(ui, app, "accessibility", "Check\nAccessibility", "file.accessibility", json!({}), false);
     });

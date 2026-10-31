@@ -502,6 +502,21 @@ impl WordApp {
     pub(crate) fn ui_command(&mut self, id: &str, p: &Value) -> Option<Result<Value, String>> {
         let s = |k: &str| p.get(k).and_then(Value::as_str);
         Some(Ok(match id {
+            "ui.appTool" => {
+                let id = s("id").unwrap_or_default();
+                let Some(tool) = self.services.app_tools.iter().find(|t| t.id == id) else {
+                    return Some(Err(format!("no app tool {id:?}")));
+                };
+                let report = wordcraft_engine::io::save_bytes("document.docx", &self.session.doc).and_then(|bytes| (tool.run)(&bytes));
+                match report {
+                    Ok(text) => {
+                        let title = tool.label;
+                        self.dialog = Some(crate::dialogs::Dialog::Report { title, text: text.clone() });
+                        json!({"report": text})
+                    }
+                    Err(e) => return Some(Err(e)),
+                }
+            }
             "ui.checkForUpdates" | "help.checkForUpdates" if !crate::brand::get().updates => {
                 return Some(Err(format!("{} has no update check here", crate::brand::name())));
             }
@@ -1041,6 +1056,7 @@ pub(crate) fn works_without_document(id: &str) -> bool {
             | "ui.fileBrowser"
             | "ui.makeDefaultApp"
             | "ui.discord"
+            | "ui.appTool"
             | "ui.caretAnimation"
             | "ui.startScreen"
             | "ui.checkForUpdates"

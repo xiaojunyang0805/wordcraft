@@ -26,6 +26,7 @@ pub(super) fn body(app: &mut WordApp, ui: &mut Ui, d: &mut Dialog) -> bool {
         Dialog::Link { .. } => link_dialog(app, ui, d),
         Dialog::Bookmark { name, by_location, hidden, deleted } => bookmark(app, ui, name, by_location, hidden, deleted),
         Dialog::WordCount { .. } => word_count_dialog(app, ui, d),
+        Dialog::Report { text, .. } => report_dialog(ui, text),
         Dialog::Zoom { .. } => zoom_dialog(app, ui, d),
         Dialog::Watermark { .. } => watermark_dialog(app, ui, d),
         Dialog::Phonetic { .. } => phonetic_dialog(app, ui, d),
@@ -781,6 +782,16 @@ fn word_count_dialog(app: &mut WordApp, ui: &mut Ui, d: &mut Dialog) -> bool {
     {
         *stats = v;
     }
+    let (ok, cancel) = buttons(ui, tl!("Close"));
+    ok || cancel
+}
+
+/// An app tool's report: its text, scrolling when long, and Close.
+fn report_dialog(ui: &mut Ui, text: &str) -> bool {
+    egui::ScrollArea::vertical().max_height(360.0).show(ui, |ui| {
+        ui.set_min_width(420.0);
+        ui.add(egui::Label::new(egui::RichText::new(text).monospace()).wrap());
+    });
     let (ok, cancel) = buttons(ui, tl!("Close"));
     ok || cancel
 }

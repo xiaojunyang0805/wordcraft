@@ -1,9 +1,24 @@
 use super::state::DefaultApp;
 use super::{FileDialogAnswer, FileDialogRequest, async_saves, paste_picture, printing};
 
+/// A tool an app built on WordCraft adds to the ribbon (Review, in a group named after the app's
+/// brand): it gets the document saved as DOCX and returns a report the front end shows in a
+/// dialog, or an error for the status bar.
+pub struct AppTool {
+    /// Stable id, for the `ui.appTool` command (`{"id": …}`).
+    pub id: &'static str,
+    /// The button's label, also the report's title (shown as given, not translated).
+    pub label: &'static str,
+    /// The ribbon icon, by name (`icons.rs`).
+    pub icon: &'static str,
+    pub run: Box<dyn Fn(&[u8]) -> Result<String, String>>,
+}
+
 /// Platform services injected by the host (file dialogs, file I/O).
 #[derive(Default)]
 pub struct Services {
+    /// Tools the embedding app adds to the ribbon ([`AppTool`]).
+    pub app_tools: Vec<AppTool>,
     /// Desktop: discover configured printers on a worker.
     pub printers: Option<printing::Discover>,
     /// Desktop: submit the PDF with the chosen settings on a worker.
@@ -100,3 +115,27 @@ pub type Inbox = std::sync::Arc<std::sync::Mutex<Vec<(String, Vec<u8>)>>>;
 /// [`Services::host_save`]: `(file name, bytes, save_as)`. An error means the page didn't get
 /// the file, and the save failed.
 pub type HostSaveFn = Box<dyn Fn(&str, &[u8], bool) -> Result<(), String>>;
+
+#[cfg(test)]
+mod tests {
+    use super::{AppTool, Services};
+    use crate::WordApp;
+    use serde_json::json;
+
+    /// An app tool gets the document as DOCX and its report opens in a dialog; an unknown id or a
+    /// failing tool is an error.
+    #[test]
+    fn an_app_tool_reports_on_the_document() {
+        let tools = vec![
+            AppTool { id: "size", label: "Size", icon: "wordCount", run: Box::new(|docx: &[u8]| Ok(format!("zip: {}", docx.starts_with(b"PK")))) },
+            AppTool { id: "fail", label: "Fail", icon: "wordCount", run: Box::new(|_: &[u8]| Err("no".into())) },
+        ];
+        let services = Services { app_tools: tools, ..Default::default() };
+        let mut app = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::new()), services);
+        let r = app.run("ui.appTool", json!({"id": "size"})).unwrap();
+        assert_eq!(r["report"], "zip: true");
+        assert!(matches!(&app.dialog, Some(crate::dialogs::Dialog::Report { title: "Size", text }) if text == "zip: true"));
+        assert!(app.run("ui.appTool", json!({"id": "fail"})).is_err());
+        assert!(app.run("ui.appTool", json!({"id": "nope"})).is_err());
+    }
+}
