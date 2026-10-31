@@ -13,11 +13,17 @@ pub struct Brand {
     pub version: &'static str,
     /// The About box's description, in place of WordCraft's (shown as given, not translated).
     pub about: Option<&'static str>,
+    /// Show the ArtCraft community links (the Discord button, File › Discord community,
+    /// Help › Community Discord). An app with a community of its own turns them off.
+    pub community: bool,
+    /// Offer WordCraft's updates (Help › Check for Updates). An app with releases of its own
+    /// turns this off.
+    pub updates: bool,
 }
 
 impl Default for Brand {
     fn default() -> Brand {
-        Brand { name: "WordCraft", version: env!("CARGO_PKG_VERSION"), about: None }
+        Brand { name: "WordCraft", version: env!("CARGO_PKG_VERSION"), about: None, community: true, updates: true }
     }
 }
 
@@ -52,5 +58,6 @@ mod tests {
         assert_eq!(super::name(), "WordCraft");
         assert_eq!(super::about_title(), "About WordCraft");
         assert_eq!(super::get().version, env!("CARGO_PKG_VERSION"));
+        assert!(super::get().community && super::get().updates);
     }
 }

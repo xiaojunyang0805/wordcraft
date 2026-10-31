@@ -502,6 +502,9 @@ impl WordApp {
     pub(crate) fn ui_command(&mut self, id: &str, p: &Value) -> Option<Result<Value, String>> {
         let s = |k: &str| p.get(k).and_then(Value::as_str);
         Some(Ok(match id {
+            "ui.checkForUpdates" | "help.checkForUpdates" if !crate::brand::get().updates => {
+                return Some(Err(format!("{} has no update check here", crate::brand::name())));
+            }
             "ui.checkForUpdates" | "help.checkForUpdates" => {
                 crate::updates_ui::check(self);
                 Value::Null
@@ -747,6 +750,9 @@ impl WordApp {
                     "making WordCraft the default app needs a click in File › Options › General; scripts and agents can't change system defaults"
                         .into(),
                 ));
+            }
+            "ui.discord" if !crate::brand::get().community => {
+                return Some(Err(format!("{} has no community link here", crate::brand::name())));
             }
             "ui.discord" => {
                 self.canvas.open_url = Some("https://discord.gg/artcraft".into());
